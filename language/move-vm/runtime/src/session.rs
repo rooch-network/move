@@ -507,7 +507,12 @@ impl<'r, 'l> Session<'r, 'l> {
     }
 
     /// Gets the underlying native extensions.
-    pub fn get_native_extensions(&mut self) -> &mut NativeContextExtensions<'r> {
+    pub fn get_native_extensions(&self) -> &NativeContextExtensions<'r> {
+        &self.native_extensions
+    }
+
+    /// Gets the underlying native extensions as mut.
+    pub fn get_native_extensions_mut(&mut self) -> &mut NativeContextExtensions<'r> {
         &mut self.native_extensions
     }
 
