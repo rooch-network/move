@@ -5,8 +5,12 @@
 use std::{collections::BTreeSet, sync::Arc};
 
 use crate::{
-    config::VMConfig, data_cache::TransactionDataCache, native_extensions::NativeContextExtensions,
-    native_functions::NativeFunction, runtime::VMRuntime, session::Session,
+    config::VMConfig,
+    data_cache::{TransactionCache, TransactionDataCache},
+    native_extensions::NativeContextExtensions,
+    native_functions::NativeFunction,
+    runtime::VMRuntime,
+    session::Session,
 };
 use move_binary_format::{
     errors::{Location, VMResult},
@@ -16,6 +20,7 @@ use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     metadata::Metadata, resolver::MoveResolver,
 };
+use move_vm_types::data_store::DataStore;
 
 pub struct MoveVM {
     runtime: VMRuntime,
@@ -52,7 +57,10 @@ impl MoveVM {
     ///     cases where this may not be necessary, with the most notable one being the common module
     ///     publishing flow: you can keep using the same Move VM if you publish some modules in a Session
     ///     and apply the effects to the storage when the Session ends.
-    pub fn new_session<'r, S: MoveResolver>(&self, remote: &'r S) -> Session<'r, '_, S> {
+    pub fn new_session<'r, S: MoveResolver>(
+        &self,
+        remote: &'r S,
+    ) -> Session<'r, '_, TransactionDataCache<'r, '_, S>> {
         self.runtime.new_session(remote)
     }
 
@@ -61,22 +69,37 @@ impl MoveVM {
         &self,
         remote: &'r S,
         extensions: NativeContextExtensions<'r>,
-    ) -> Session<'r, '_, S> {
+    ) -> Session<'r, '_, TransactionDataCache<'r, '_, S>> {
         self.runtime.new_session_with_extensions(remote, extensions)
     }
 
+    /// Create a new session, as in `new_session`, but provide a data store
+    pub fn new_session_with_store<'r, D: DataStore + TransactionCache>(
+        &self,
+        data_store: D,
+    ) -> Session<'r, '_, D> {
+        self.runtime.new_session_with_store(data_store)
+    }
+
+    /// Create a new session, as in `new_session`, but provide a data store and native context extensions
+    pub fn new_session_with_store_and_extensions<'r, D: DataStore + TransactionCache>(
+        &self,
+        data_store: D,
+        extensions: NativeContextExtensions<'r>,
+    ) -> Session<'r, '_, D> {
+        self.runtime
+            .new_session_with_store_and_extensions(data_store, extensions)
+    }
+
     /// Load a module into VM's code cache
-    pub fn load_module<'r, S: MoveResolver>(
+    pub fn load_module<'r, S: DataStore>(
         &self,
         module_id: &ModuleId,
-        remote: &'r S,
+        data_store: &'r S,
     ) -> VMResult<Arc<CompiledModule>> {
         self.runtime
             .loader()
-            .load_module(
-                module_id,
-                &TransactionDataCache::new(remote, self.runtime.loader()),
-            )
+            .load_module(module_id, data_store)
             .map(|arc_module| arc_module.arc_module())
     }
 

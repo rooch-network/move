@@ -34,6 +34,7 @@ use move_stdlib::move_stdlib_named_addresses;
 use move_symbol_pool::Symbol;
 use move_vm_runtime::{
     config::VMConfig,
+    data_cache::TransactionDataCache,
     move_vm::MoveVM,
     session::{SerializedReturnValues, Session},
 };
@@ -337,7 +338,10 @@ impl<'a> SimpleVMTestAdapter<'a> {
     fn perform_session_action<Ret>(
         &mut self,
         gas_budget: Option<u64>,
-        f: impl FnOnce(&mut Session<InMemoryStorage>, &mut GasStatus) -> VMResult<Ret>,
+        f: impl FnOnce(
+            &mut Session<TransactionDataCache<'_, '_, InMemoryStorage>>,
+            &mut GasStatus,
+        ) -> VMResult<Ret>,
         vm_config: VMConfig,
     ) -> VMResult<Ret> {
         // start session

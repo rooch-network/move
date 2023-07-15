@@ -18,13 +18,17 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::{
+    data_cache::{TransactionCache, TransactionDataCache},
     move_vm::MoveVM,
     native_extensions::NativeContextExtensions,
     native_functions::NativeFunction,
     session::{SerializedReturnValues, Session},
 };
 use move_vm_test_utils::gas_schedule::{Gas, GasStatus};
-use move_vm_types::values::{Reference, Value};
+use move_vm_types::{
+    data_store::DataStore,
+    values::{Reference, Value},
+};
 
 use crate::{
     actor_metadata,
@@ -84,7 +88,7 @@ impl AsyncVM {
         for_actor: AccountAddress,
         virtual_time: u128,
         move_resolver: &'r mut S,
-    ) -> AsyncSession<'r, 'l, S> {
+    ) -> AsyncSession<'r, 'l, TransactionDataCache<'r, 'l, S>> {
         self.new_session_with_extensions(
             for_actor,
             virtual_time,
@@ -100,13 +104,45 @@ impl AsyncVM {
         virtual_time: u128,
         move_resolver: &'r mut S,
         ext: NativeContextExtensions<'r>,
-    ) -> AsyncSession<'r, 'l, S> {
+    ) -> AsyncSession<'r, 'l, TransactionDataCache<'r, 'l, S>> {
         let extensions = make_extensions(ext, for_actor, virtual_time, true);
         AsyncSession {
             vm: self,
             vm_session: self
                 .move_vm
                 .new_session_with_extensions(move_resolver, extensions),
+        }
+    }
+
+    /// Creates a new session with given data store.
+    pub fn new_session_with_store<'r, 'l, D: DataStore + TransactionCache>(
+        &'l self,
+        for_actor: AccountAddress,
+        virtual_time: u128,
+        data_store: D,
+    ) -> AsyncSession<'r, 'l, D> {
+        self.new_session_with_store_and_extensions(
+            for_actor,
+            virtual_time,
+            data_store,
+            NativeContextExtensions::default(),
+        )
+    }
+
+    /// Creates a new session with given data store and extensions.
+    pub fn new_session_with_store_and_extensions<'r, 'l, D: DataStore + TransactionCache>(
+        &'l self,
+        for_actor: AccountAddress,
+        virtual_time: u128,
+        data_store: D,
+        ext: NativeContextExtensions<'r>,
+    ) -> AsyncSession<'r, 'l, D> {
+        let extensions = make_extensions(ext, for_actor, virtual_time, true);
+        AsyncSession {
+            vm: self,
+            vm_session: self
+                .move_vm
+                .new_session_with_store_and_extensions(data_store, extensions),
         }
     }
 
@@ -159,7 +195,7 @@ pub struct AsyncError {
 /// Result type for operations of an AsyncSession.
 pub type AsyncResult<'r> = Result<AsyncSuccess<'r>, AsyncError>;
 
-impl<'r, 'l, S: MoveResolver> AsyncSession<'r, 'l, S> {
+impl<'r, 'l, S: DataStore + TransactionCache> AsyncSession<'r, 'l, S> {
     /// Get the underlying Move VM session.
     pub fn get_move_session(&mut self) -> &mut Session<'r, 'l, S> {
         &mut self.vm_session

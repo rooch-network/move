@@ -24,6 +24,7 @@ use move_core_types::{
     resolver::{ModuleResolver, ResourceResolver},
 };
 use move_prover_test_utils::{baseline_test::verify_or_update_baseline, extract_test_directives};
+use move_vm_runtime::data_cache::TransactionDataCache;
 use move_vm_test_utils::gas_schedule::GasStatus;
 use std::{
     cell::RefCell,
@@ -141,7 +142,7 @@ impl Harness {
 
     fn publish_module(
         &self,
-        session: &mut AsyncSession<HarnessProxy>,
+        session: &mut AsyncSession<TransactionDataCache<'_, '_, HarnessProxy>>,
         id: &IdentStr,
         gas: &mut GasStatus,
         done: &mut BTreeSet<Identifier>,

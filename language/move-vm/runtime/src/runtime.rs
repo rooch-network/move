@@ -4,7 +4,7 @@
 
 use crate::{
     config::VMConfig,
-    data_cache::TransactionDataCache,
+    data_cache::{TransactionCache, TransactionDataCache},
     interpreter::Interpreter,
     loader::{Function, Loader},
     native_extensions::NativeContextExtensions,
@@ -51,7 +51,10 @@ impl VMRuntime {
         })
     }
 
-    pub fn new_session<'r, S: MoveResolver>(&self, remote: &'r S) -> Session<'r, '_, S> {
+    pub fn new_session<'r, S: MoveResolver>(
+        &self,
+        remote: &'r S,
+    ) -> Session<'r, '_, TransactionDataCache<'r, '_, S>> {
         self.new_session_with_extensions(remote, NativeContextExtensions::default())
     }
 
@@ -59,10 +62,29 @@ impl VMRuntime {
         &self,
         remote: &'r S,
         native_extensions: NativeContextExtensions<'r>,
-    ) -> Session<'r, '_, S> {
+    ) -> Session<'r, '_, TransactionDataCache<'r, '_, S>> {
         Session {
             runtime: self,
             data_cache: TransactionDataCache::new(remote, &self.loader),
+            native_extensions,
+        }
+    }
+
+    pub fn new_session_with_store<'r, D: DataStore + TransactionCache>(
+        &self,
+        data_store: D,
+    ) -> Session<'r, '_, D> {
+        self.new_session_with_store_and_extensions(data_store, NativeContextExtensions::default())
+    }
+
+    pub fn new_session_with_store_and_extensions<'r, D: DataStore + TransactionCache>(
+        &self,
+        data_store: D,
+        native_extensions: NativeContextExtensions<'r>,
+    ) -> Session<'r, '_, D> {
+        Session {
+            runtime: self,
+            data_cache: data_store,
             native_extensions,
         }
     }

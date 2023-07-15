@@ -49,7 +49,12 @@ impl AccountDataCache {
 /// The Move VM takes a `DataStore` in input and this is the default and correct implementation
 /// for a data store related to a transaction. Clients should create an instance of this type
 /// and pass it to the Move VM.
-pub(crate) struct TransactionDataCache<'r, 'l, S> {
+pub trait TransactionCache {
+    fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)>;
+    fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64;
+}
+
+pub struct TransactionDataCache<'r, 'l, S> {
     remote: &'r S,
     loader: &'l Loader,
     account_map: BTreeMap<AccountAddress, AccountDataCache>,
@@ -68,11 +73,25 @@ impl<'r, 'l, S: MoveResolver> TransactionDataCache<'r, 'l, S> {
         }
     }
 
+    fn get_mut_or_insert_with<'a, K, V, F>(map: &'a mut BTreeMap<K, V>, k: &K, gen: F) -> &'a mut V
+    where
+        F: FnOnce() -> (K, V),
+        K: Ord,
+    {
+        if !map.contains_key(k) {
+            let (k, v) = gen();
+            map.insert(k, v);
+        }
+        map.get_mut(k).unwrap()
+    }
+}
+
+impl<'r, 'l, S: MoveResolver> TransactionCache for TransactionDataCache<'r, 'l, S> {
     /// Make a write set from the updated (dirty, deleted) global resources along with
     /// published modules.
     ///
     /// Gives all proper guarantees on lifetime of global data as well.
-    pub(crate) fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
+    fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
         let mut change_set = ChangeSet::new();
         for (addr, account_data_cache) in self.account_map.into_iter() {
             let mut modules = BTreeMap::new();
@@ -137,7 +156,7 @@ impl<'r, 'l, S: MoveResolver> TransactionDataCache<'r, 'l, S> {
         Ok((change_set, events))
     }
 
-    pub(crate) fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64 {
+    fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64 {
         // The sender's account will always be mutated.
         let mut total_mutated_accounts: u64 = 1;
         for (addr, entry) in self.account_map.iter() {
@@ -146,18 +165,6 @@ impl<'r, 'l, S: MoveResolver> TransactionDataCache<'r, 'l, S> {
             }
         }
         total_mutated_accounts
-    }
-
-    fn get_mut_or_insert_with<'a, K, V, F>(map: &'a mut BTreeMap<K, V>, k: &K, gen: F) -> &'a mut V
-    where
-        F: FnOnce() -> (K, V),
-        K: Ord,
-    {
-        if !map.contains_key(k) {
-            let (k, v) = gen();
-            map.insert(k, v);
-        }
-        map.get_mut(k).unwrap()
     }
 }
 
