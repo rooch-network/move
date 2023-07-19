@@ -476,6 +476,169 @@ pub fn script_into_module(compiled_script: CompiledScript) -> CompiledModule {
 }
 
 #[allow(deprecated)]
+pub fn run_spec_checker_for_script(
+    env: &mut GlobalEnv,
+    units: Vec<AnnotatedCompiledUnit>,
+    mut eprog: E::Program,
+) {
+    let mut builder = ModelBuilder::new(env);
+    // Merge the compiled units with the expanded program, preserving the order of the compiled
+    // units which is topological w.r.t. use relation.
+    let modules = units
+        .clone()
+        .into_iter()
+        .flat_map(|unit| {
+            if let AnnotatedCompiledUnit::Module(annot_module) = unit {
+                let module_ident = annot_module.module_ident();
+                let expanded_module = match eprog.modules.remove(&module_ident) {
+                    Some(m) => m,
+                    None => {
+                        warn!(
+                            "[internal] cannot associate bytecode module `{}` with AST",
+                            module_ident
+                        );
+                        return None;
+                    }
+                };
+                Some((
+                    module_ident,
+                    expanded_module,
+                    annot_module.named_module.module,
+                    annot_module.named_module.source_map,
+                    annot_module.function_infos,
+                ))
+            } else {
+                None
+            }
+        })
+        .enumerate();
+
+    let script_modules = units
+        .into_iter()
+        .flat_map(|unit| {
+            if let AnnotatedCompiledUnit::Script(AnnotatedCompiledScript {
+                                                     loc: _loc,
+                                                     named_script: script,
+                                                     function_info,
+                                                 }) = unit
+            {
+                let move_compiler::expansion::ast::Script {
+                    package_name,
+                    attributes,
+                    loc,
+                    immediate_neighbors,
+                    used_addresses,
+                    function_name,
+                    constants,
+                    function,
+                    specs,
+                } = match eprog.scripts.remove(&script.name) {
+                    Some(s) => s,
+                    None => {
+                        warn!(
+                            "[internal] cannot associate bytecode script `{}` with AST",
+                            script.name
+                        );
+                        return None;
+                    }
+                };
+                // Convert the script into a module.
+                let address =
+                    Address::Numerical(None, sp(loc, NumericalAddress::DEFAULT_ERROR_ADDRESS));
+                let ident = sp(
+                    loc,
+                    ModuleIdent_::new(address, ParserModuleName(function_name.0)),
+                );
+                let mut function_infos = UniqueMap::new();
+                function_infos.add(function_name, function_info).unwrap();
+                // Construct a pseudo module definition.
+                let mut functions = UniqueMap::new();
+                functions.add(function_name, function).unwrap();
+                let expanded_module = ModuleDefinition {
+                    package_name,
+                    attributes,
+                    loc,
+                    dependency_order: usize::MAX,
+                    immediate_neighbors,
+                    used_addresses,
+                    is_source_module: true,
+                    friends: UniqueMap::new(),
+                    structs: UniqueMap::new(),
+                    constants,
+                    functions,
+                    specs,
+                };
+                let module = script_into_module(script.script);
+                Some((
+                    ident,
+                    expanded_module,
+                    module,
+                    script.source_map,
+                    function_infos,
+                ))
+            } else {
+                None
+            }
+        })
+        .enumerate();
+
+    for (module_count, (module_id, expanded_module, compiled_module, source_map, function_infos)) in
+    modules
+    {
+        let loc = builder.to_loc(&expanded_module.loc);
+        let addr_bytes = builder.resolve_address(&loc, &module_id.value.address);
+        let module_name = ModuleName::from_address_bytes_and_name(
+            addr_bytes,
+            builder
+                .env
+                .symbol_pool()
+                .make(&module_id.value.module.0.value),
+        );
+        let module_id = ModuleId::new(module_count);
+        let mut module_translator = ModuleBuilder::new(&mut builder, module_id, module_name);
+        module_translator.translate(
+            loc,
+            expanded_module,
+            compiled_module,
+            source_map,
+            function_infos,
+        );
+    }
+
+    for (module_count, (module_id, expanded_module, compiled_module, source_map, function_infos)) in
+    script_modules
+    {
+        let loc = builder.to_loc(&expanded_module.loc);
+        let addr_bytes = builder.resolve_address(&loc, &module_id.value.address);
+        let module_name = ModuleName::from_address_bytes_and_name(
+            addr_bytes,
+            builder
+                .env
+                .symbol_pool()
+                .make(&module_id.value.module.0.value),
+        );
+        let module_id = ModuleId::new(module_count);
+        let mut module_translator = ModuleBuilder::new(&mut builder, module_id, module_name);
+        module_translator.translate(
+            loc,
+            expanded_module,
+            compiled_module,
+            source_map,
+            function_infos,
+        );
+    }
+
+    // Populate GlobalEnv with model-level information
+    builder.populate_env();
+
+    // After all specs have been processed, warn about any unused schemas.
+    builder.warn_unused_schemas();
+
+    // Apply simplification passes
+    run_spec_simplifier(env);
+}
+
+#[allow(deprecated)]
 pub fn run_spec_checker(
     env: &mut GlobalEnv,
     units: Vec<AnnotatedCompiledUnit>,
