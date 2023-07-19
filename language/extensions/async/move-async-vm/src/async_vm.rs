@@ -18,7 +18,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::{
-    data_cache::{TransactionCache, TransactionDataCache},
+    data_cache::TransactionDataCache,
     move_vm::MoveVM,
     native_extensions::NativeContextExtensions,
     native_functions::NativeFunction,
@@ -26,7 +26,7 @@ use move_vm_runtime::{
 };
 use move_vm_test_utils::gas_schedule::{Gas, GasStatus};
 use move_vm_types::{
-    data_store::DataStore,
+    data_store::{DataStore, TransactionCache},
     values::{Reference, Value},
 };
 
