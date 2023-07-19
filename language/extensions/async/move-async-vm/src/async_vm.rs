@@ -115,26 +115,26 @@ impl AsyncVM {
     }
 
     /// Creates a new session with given data store.
-    pub fn new_session_with_store<'r, 'l, D: DataStore + TransactionCache>(
+    pub fn new_session_with_cache<'r, 'l, D: DataStore + TransactionCache>(
         &'l self,
         for_actor: AccountAddress,
         virtual_time: u128,
-        data_store: D,
+        data_cache: D,
     ) -> AsyncSession<'r, 'l, D> {
-        self.new_session_with_store_and_extensions(
+        self.new_session_with_cache_and_extensions(
             for_actor,
             virtual_time,
-            data_store,
+            data_cache,
             NativeContextExtensions::default(),
         )
     }
 
     /// Creates a new session with given data store and extensions.
-    pub fn new_session_with_store_and_extensions<'r, 'l, D: DataStore + TransactionCache>(
+    pub fn new_session_with_cache_and_extensions<'r, 'l, D: DataStore + TransactionCache>(
         &'l self,
         for_actor: AccountAddress,
         virtual_time: u128,
-        data_store: D,
+        data_cache: D,
         ext: NativeContextExtensions<'r>,
     ) -> AsyncSession<'r, 'l, D> {
         let extensions = make_extensions(ext, for_actor, virtual_time, true);
@@ -142,7 +142,7 @@ impl AsyncVM {
             vm: self,
             vm_session: self
                 .move_vm
-                .new_session_with_store_and_extensions(data_store, extensions),
+                .new_session_with_cache_and_extensions(data_cache, extensions),
         }
     }
 

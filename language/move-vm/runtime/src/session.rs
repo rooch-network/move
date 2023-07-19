@@ -2,9 +2,7 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    data_cache::TransactionCache, native_extensions::NativeContextExtensions, runtime::VMRuntime,
-};
+use crate::{native_extensions::NativeContextExtensions, runtime::VMRuntime};
 use move_binary_format::{
     compatibility::Compatibility,
     errors::*,
@@ -18,7 +16,7 @@ use move_core_types::{
     value::MoveTypeLayout,
 };
 use move_vm_types::{
-    data_store::DataStore,
+    data_store::{DataStore, TransactionCache},
     gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };

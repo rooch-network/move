@@ -5,13 +5,10 @@
 use std::{collections::BTreeSet, sync::Arc};
 
 use crate::{
-    config::VMConfig,
-    data_cache::{TransactionCache, TransactionDataCache},
-    native_extensions::NativeContextExtensions,
-    native_functions::NativeFunction,
-    runtime::VMRuntime,
-    session::Session,
+    config::VMConfig, data_cache::TransactionDataCache, native_extensions::NativeContextExtensions,
+    native_functions::NativeFunction, runtime::VMRuntime, session::Session,
 };
+
 use move_binary_format::{
     errors::{Location, VMResult},
     CompiledModule,
@@ -20,7 +17,7 @@ use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     metadata::Metadata, resolver::MoveResolver,
 };
-use move_vm_types::data_store::DataStore;
+use move_vm_types::data_store::{DataStore, TransactionCache};
 
 pub struct MoveVM {
     runtime: VMRuntime,
@@ -74,21 +71,21 @@ impl MoveVM {
     }
 
     /// Create a new session, as in `new_session`, but provide a data store
-    pub fn new_session_with_store<'r, D: DataStore + TransactionCache>(
+    pub fn new_session_with_cache<'r, D: DataStore + TransactionCache>(
         &self,
-        data_store: D,
+        data_cache: D,
     ) -> Session<'r, '_, D> {
-        self.runtime.new_session_with_store(data_store)
+        self.runtime.new_session_with_cache(data_cache)
     }
 
     /// Create a new session, as in `new_session`, but provide a data store and native context extensions
-    pub fn new_session_with_store_and_extensions<'r, D: DataStore + TransactionCache>(
+    pub fn new_session_with_cache_and_extensions<'r, D: DataStore + TransactionCache>(
         &self,
-        data_store: D,
+        data_cache: D,
         extensions: NativeContextExtensions<'r>,
     ) -> Session<'r, '_, D> {
         self.runtime
-            .new_session_with_store_and_extensions(data_store, extensions)
+            .new_session_with_cache_and_extensions(data_cache, extensions)
     }
 
     /// Load a module into VM's code cache
@@ -149,5 +146,11 @@ impl MoveVM {
     ///   call this directly via the loader instead of the VM.
     pub fn get_module_metadata(&self, module: ModuleId, key: &[u8]) -> Option<Metadata> {
         self.runtime.loader().get_metadata(module, key)
+    }
+
+    /// Borrow runtime
+    #[cfg(test)]
+    pub(crate) fn runtime(&self) -> &VMRuntime {
+        &self.runtime
     }
 }

@@ -8,7 +8,10 @@ use crate::{
 };
 use move_binary_format::errors::{PartialVMResult, VMResult};
 use move_core_types::{
-    account_address::AccountAddress, gas_algebra::NumBytes, language_storage::ModuleId,
+    account_address::AccountAddress,
+    effects::{ChangeSet, Event},
+    gas_algebra::NumBytes,
+    language_storage::ModuleId,
     value::MoveTypeLayout,
 };
 
@@ -59,4 +62,22 @@ pub trait DataStore {
     ) -> PartialVMResult<()>;
 
     fn events(&self) -> &Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>;
+}
+
+/// Trait for transaction data cache. Keep updates within a transaction so they can all be published at
+/// once when the transaction succeeds.
+///
+/// It also provides an implementation for the opcodes that refer to storage and gives the
+/// proper guarantees of reference lifetime.
+///
+/// Dirty objects are serialized and returned in make_write_set.
+///
+/// It is a responsibility of the client to publish changes once the transaction is executed.
+pub trait TransactionCache {
+    /// Make a write set from the updated (dirty, deleted) global resources along with
+    /// published modules.
+    ///
+    /// Gives all proper guarantees on lifetime of global data as well.
+    fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)>;
+    fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64;
 }

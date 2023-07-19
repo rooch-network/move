@@ -16,7 +16,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_types::{
-    data_store::DataStore,
+    data_store::{DataStore, TransactionCache},
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Value},
 };
@@ -49,11 +49,6 @@ impl AccountDataCache {
 /// The Move VM takes a `DataStore` in input and this is the default and correct implementation
 /// for a data store related to a transaction. Clients should create an instance of this type
 /// and pass it to the Move VM.
-pub trait TransactionCache {
-    fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)>;
-    fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64;
-}
-
 pub struct TransactionDataCache<'r, 'l, S> {
     remote: &'r S,
     loader: &'l Loader,
@@ -64,7 +59,7 @@ pub struct TransactionDataCache<'r, 'l, S> {
 impl<'r, 'l, S: MoveResolver> TransactionDataCache<'r, 'l, S> {
     /// Create a `TransactionDataCache` with a `RemoteCache` that provides access to data
     /// not updated in the transaction.
-    pub(crate) fn new(remote: &'r S, loader: &'l Loader) -> Self {
+    pub fn new(remote: &'r S, loader: &'l Loader) -> Self {
         TransactionDataCache {
             remote,
             loader,

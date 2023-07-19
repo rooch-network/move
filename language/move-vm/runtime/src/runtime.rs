@@ -4,7 +4,7 @@
 
 use crate::{
     config::VMConfig,
-    data_cache::{TransactionCache, TransactionDataCache},
+    data_cache::TransactionDataCache,
     interpreter::Interpreter,
     loader::{Function, Loader},
     native_extensions::NativeContextExtensions,
@@ -28,7 +28,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_types::{
-    data_store::DataStore,
+    data_store::{DataStore, TransactionCache},
     gas::GasMeter,
     loaded_data::runtime_types::Type,
     values::{Locals, Reference, VMValueCast, Value},
@@ -70,21 +70,21 @@ impl VMRuntime {
         }
     }
 
-    pub fn new_session_with_store<'r, D: DataStore + TransactionCache>(
+    pub fn new_session_with_cache<'r, D: DataStore + TransactionCache>(
         &self,
-        data_store: D,
+        data_cache: D,
     ) -> Session<'r, '_, D> {
-        self.new_session_with_store_and_extensions(data_store, NativeContextExtensions::default())
+        self.new_session_with_cache_and_extensions(data_cache, NativeContextExtensions::default())
     }
 
-    pub fn new_session_with_store_and_extensions<'r, D: DataStore + TransactionCache>(
+    pub fn new_session_with_cache_and_extensions<'r, D: DataStore + TransactionCache>(
         &self,
-        data_store: D,
+        data_cache: D,
         native_extensions: NativeContextExtensions<'r>,
     ) -> Session<'r, '_, D> {
         Session {
             runtime: self,
-            data_cache: data_store,
+            data_cache,
             native_extensions,
         }
     }

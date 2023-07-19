@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crate::move_vm::MoveVM;
+use crate::{data_cache::TransactionDataCache, move_vm::MoveVM};
 use move_binary_format::{
     errors::{VMError, VMResult},
     file_format::{
@@ -323,12 +323,49 @@ fn call_script_function_with_args_ty_args_signers(
     Ok(())
 }
 
+fn call_script_function_with_args_ty_args_signers_with_custom_cache(
+    module: CompiledModule,
+    function_name: Identifier,
+    non_signer_args: Vec<Vec<u8>>,
+    ty_args: Vec<TypeTag>,
+    signers: Vec<AccountAddress>,
+) -> VMResult<()> {
+    let move_vm = MoveVM::new(vec![]).unwrap();
+    let mut remote_view = RemoteStore::new();
+    let id = module.self_id();
+    remote_view.add_module(module);
+    let data_cache = TransactionDataCache::new(&remote_view, move_vm.runtime().loader());
+    let mut session = move_vm.new_session_with_cache(data_cache);
+    session.execute_function_bypass_visibility(
+        &id,
+        function_name.as_ident_str(),
+        ty_args,
+        combine_signers_and_args(signers, non_signer_args),
+        &mut UnmeteredGasMeter,
+    )?;
+    Ok(())
+}
+
 fn call_script_function(
     module: CompiledModule,
     function_name: Identifier,
     args: Vec<Vec<u8>>,
 ) -> VMResult<()> {
     call_script_function_with_args_ty_args_signers(module, function_name, args, vec![], vec![])
+}
+
+fn call_script_function_with_custom_cache(
+    module: CompiledModule,
+    function_name: Identifier,
+    args: Vec<Vec<u8>>,
+) -> VMResult<()> {
+    call_script_function_with_args_ty_args_signers_with_custom_cache(
+        module,
+        function_name,
+        args,
+        vec![],
+        vec![],
+    )
 }
 
 // these signatures used to be bad, but there are no bad signatures for scripts at the VM
@@ -836,4 +873,23 @@ fn call_missing_item() {
         StatusCode::FUNCTION_RESOLUTION_FAILURE
     );
     assert_eq!(error.status_type(), StatusType::Verification);
+}
+
+#[test]
+fn check_script_function_with_custom_cache() {
+    //
+    // Good signatures
+    //
+    for (signature, args) in good_signatures_and_arguments() {
+        // Body of the script is just an abort, so `ABORTED` means the script was accepted and ran
+        let expected_status = StatusCode::ABORTED;
+        let (module, function_name) = make_script_function(signature);
+        assert_eq!(
+            call_script_function_with_custom_cache(module, function_name, serialize_values(&args))
+                .err()
+                .unwrap()
+                .major_status(),
+            expected_status
+        )
+    }
 }
