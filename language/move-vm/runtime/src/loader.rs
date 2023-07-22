@@ -932,7 +932,7 @@ impl Loader {
     // Helpers for loading and verification
     //
 
-    pub(crate) fn load_type(
+    pub fn load_type(
         &self,
         type_tag: &TypeTag,
         data_store: &(impl DataStore + ?Sized),
@@ -2826,7 +2826,7 @@ impl Loader {
 
 // Public APIs for external uses.
 impl Loader {
-    pub(crate) fn get_type_layout(
+    pub fn get_type_layout(
         &self,
         type_tag: &TypeTag,
         move_storage: &(impl DataStore + ?Sized),

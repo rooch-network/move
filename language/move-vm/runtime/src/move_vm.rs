@@ -20,7 +20,7 @@ use move_core_types::{
 use move_vm_types::data_store::{DataStore, TransactionCache};
 
 pub struct MoveVM {
-    runtime: VMRuntime,
+    pub runtime: VMRuntime,
 }
 
 impl MoveVM {
@@ -149,8 +149,7 @@ impl MoveVM {
     }
 
     /// Borrow runtime
-    #[cfg(test)]
-    pub(crate) fn runtime(&self) -> &VMRuntime {
+    pub fn runtime(&self) -> &VMRuntime {
         &self.runtime
     }
 }
