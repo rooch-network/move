@@ -5,7 +5,10 @@
 use crate::{
     interpreter::Interpreter, loader::Resolver, native_extensions::NativeContextExtensions,
 };
-use move_binary_format::errors::{ExecutionState, PartialVMError, PartialVMResult, VMResult};
+use move_binary_format::{
+    errors::{ExecutionState, PartialVMError, PartialVMResult, VMResult},
+    CompiledModule,
+};
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::InternalGas,
@@ -195,5 +198,15 @@ impl<'a, 'b> NativeContext<'a, 'b> {
 
     pub fn gas_balance(&self) -> InternalGas {
         self.gas_balance
+    }
+
+    pub fn verify_module_bundle_for_publication(
+        &self,
+        modules: &[CompiledModule],
+    ) -> PartialVMResult<()> {
+        self.resolver
+            .loader()
+            .verify_module_bundle_for_publication(modules, self.data_store)
+            .map_err(|e| e.to_partial())
     }
 }

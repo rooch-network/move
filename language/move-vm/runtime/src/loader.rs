@@ -768,7 +768,7 @@ impl Loader {
     pub(crate) fn verify_module_bundle_for_publication(
         &self,
         modules: &[CompiledModule],
-        data_store: &mut impl DataStore,
+        data_store: &(impl DataStore + ?Sized),
     ) -> VMResult<()> {
         fail::fail_point!("verifier-failpoint-1", |_| { Ok(()) });
 
@@ -805,7 +805,7 @@ impl Loader {
         module: &CompiledModule,
         bundle_verified: &BTreeMap<ModuleId, CompiledModule>,
         bundle_unverified: &BTreeSet<ModuleId>,
-        data_store: &impl DataStore,
+        data_store: &(impl DataStore + ?Sized),
     ) -> VMResult<()> {
         // Performs all verification steps to load the module without loading it, i.e., the new
         // module will NOT show up in `module_cache`. In the module republishing case, it means
