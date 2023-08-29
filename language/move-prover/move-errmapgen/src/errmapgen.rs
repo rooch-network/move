@@ -50,6 +50,7 @@ impl Default for ErrmapOptions {
 }
 
 // Define a builder struct to configure ErrmapOptions
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrmapOptionsBuilder {
     error_prefix: Option<String>,
     error_category_module: Option<ModuleId>,
