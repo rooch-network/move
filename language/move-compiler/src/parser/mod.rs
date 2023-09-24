@@ -25,6 +25,7 @@ use std::{
     fs::File,
     io::Read,
 };
+use crate::shared::ast_debug::print;
 
 pub(crate) fn parse_program(
     compilation_env: &mut CompilationEnv,
@@ -131,6 +132,92 @@ pub(crate) fn parse_program(
     Ok((files, res))
 }
 
+pub(crate) fn parse_source_program(
+    compilation_env: &mut CompilationEnv,
+    named_address_maps: NamedAddressMaps,
+    targets: Vec<IndexedPackagePath>,
+    deps: Vec<IndexedPackagePath>,
+    targets_source: Vec<String>,
+    deps_source: Vec<String>,
+) -> anyhow::Result<(
+    FilesSourceText,
+    Result<(parser::ast::Program, CommentMap), Diagnostics>,
+)> {
+    // ensure_targets_deps_dont_intersect(compilation_env, &targets, &mut deps)?;
+    let mut files: FilesSourceText = HashMap::new();
+    let mut source_definitions = Vec::new();
+    let mut source_comments = CommentMap::new();
+    let mut lib_definitions = Vec::new();
+    let mut diags: Diagnostics = Diagnostics::new();
+
+    let mut idx = 0;
+    for IndexedPackagePath {
+        package,
+        path,
+        named_address_map,
+    } in targets
+    {
+        let source_buffer = targets_source.get(idx).unwrap();
+        let (defs, comments, ds, file_hash) =
+            parse_source(compilation_env, path, &mut files, source_buffer.as_str())?;
+        source_definitions.extend(defs.into_iter().map(|def| PackageDefinition {
+            package,
+            named_address_map,
+            def,
+        }));
+        source_comments.insert(file_hash, comments);
+        diags.extend(ds);
+        idx += 1;
+    }
+
+    let mut idx = 0;
+    for IndexedPackagePath {
+        package,
+        path,
+        named_address_map,
+    } in deps
+    {
+        let source_buffer = deps_source.get(idx).unwrap();
+        let (defs, _, ds, _) = parse_source(compilation_env, path, &mut files, source_buffer.as_str())?;
+        lib_definitions.extend(defs.into_iter().map(|def| PackageDefinition {
+            package,
+            named_address_map,
+            def,
+        }));
+        diags.extend(ds);
+        idx += 1;
+    }
+
+    // TODO fix this so it works likes other passes and the handling of errors is done outside of
+    // this function
+    let env_result = compilation_env.check_diags_at_or_above_severity(Severity::BlockingError);
+    if let Err(env_diags) = env_result {
+        diags.extend(env_diags)
+    }
+
+    // Run attribute expansion on all source definitions, passing in the matching named address map.
+    for PackageDefinition {
+        named_address_map: idx,
+        def,
+        ..
+    } in source_definitions.iter_mut()
+    {
+        attr_derivation::derive_from_attributes(compilation_env, named_address_maps.get(*idx), def);
+    }
+
+    let res = if diags.is_empty() {
+        let pprog = parser::ast::Program {
+            named_address_maps,
+            source_definitions,
+            lib_definitions,
+        };
+        Ok((pprog, source_comments))
+    } else {
+        Err(diags)
+    };
+    Ok((files, res))
+}
+
 fn ensure_targets_deps_dont_intersect(
     compilation_env: &CompilationEnv,
     targets: &[IndexedPackagePath],
@@ -169,6 +256,40 @@ fn ensure_targets_deps_dont_intersect(
         "The following files were marked as both targets and dependencies:\n{}",
         all_files
     ))
+}
+
+fn parse_source(
+    compilation_env: &mut CompilationEnv,
+    fname: Symbol,
+    files: &mut FilesSourceText,
+    input: &str,
+) -> anyhow::Result<(
+    Vec<parser::ast::Definition>,
+    MatchedFileCommentMap,
+    Diagnostics,
+    FileHash,
+)> {
+    let mut diags = Diagnostics::new();
+    let source_buffer = input.to_string();
+    let file_hash = FileHash::new(input);
+    let buffer = match verify_string(file_hash, &source_buffer) {
+        Err(ds) => {
+            diags.extend(ds);
+            files.insert(file_hash, (fname, source_buffer));
+            return Ok((vec![], MatchedFileCommentMap::new(), diags, file_hash));
+        }
+        Ok(()) => &source_buffer,
+    };
+
+    let (defs, comments) = match parse_file_string(compilation_env, file_hash, buffer) {
+        Ok(defs_and_comments) => defs_and_comments,
+        Err(ds) => {
+            diags.extend(ds);
+            (vec![], MatchedFileCommentMap::new())
+        }
+    };
+    files.insert(file_hash, (fname, source_buffer));
+    Ok((defs, comments, diags, file_hash))
 }
 
 fn parse_file(
