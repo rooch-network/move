@@ -28,7 +28,15 @@ pub struct ErrmapOptions {
     pub output_file: String,
 }
 
+impl ErrmapOptions {
+    // Create a builder for ErrmapOptions
+    pub fn builder() -> ErrmapOptionsBuilder {
+        ErrmapOptionsBuilder::new()
+    }
+}
+
 impl Default for ErrmapOptions {
+    // Create a default ErrmapOptions
     fn default() -> Self {
         Self {
             error_prefix: "E".to_string(),
@@ -37,6 +45,52 @@ impl Default for ErrmapOptions {
                 Identifier::new("errors").unwrap(),
             ),
             output_file: MOVE_ERROR_DESC_EXTENSION.to_string(),
+        }
+    }
+}
+
+// Define a builder struct to configure ErrmapOptions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ErrmapOptionsBuilder {
+    error_prefix: Option<String>,
+    error_category_module: Option<ModuleId>,
+    output_file: Option<String>,
+}
+
+impl ErrmapOptionsBuilder {
+    // Initialize the builder with default values
+    fn new() -> Self {
+        ErrmapOptionsBuilder {
+            error_prefix: None,
+            error_category_module: None,
+            output_file: None,
+        }
+    }
+
+    // Set the error prefix
+    pub fn error_prefix(mut self, prefix: &str) -> Self {
+        self.error_prefix = Some(prefix.to_owned());
+        self
+    }
+
+    // Set the error category module
+    pub fn error_category_module(mut self, module: ModuleId) -> Self {
+        self.error_category_module = Some(module);
+        self
+    }
+
+    // Set the output file
+    pub fn output_file(mut self, file: &str) -> Self {
+        self.output_file = Some(file.to_owned());
+        self
+    }
+
+    // Build the ErrmapOptions instance
+    pub fn build(self) -> ErrmapOptions {
+        ErrmapOptions {
+            error_prefix: self.error_prefix.expect("Error prefix not set"),
+            error_category_module: self.error_category_module.expect("Error category module not set"),
+            output_file: self.output_file.expect("Output file not set"),
         }
     }
 }
@@ -140,3 +194,4 @@ impl<'env> ErrmapGen<'env> {
         self.env.symbol_pool().string(symbol)
     }
 }
+
