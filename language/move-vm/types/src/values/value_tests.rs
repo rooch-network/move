@@ -226,3 +226,18 @@ fn test_vm_value_vector_u64_casting() {
         Value::vector_u64([1, 2, 3]).value_as::<Vec<u64>>().unwrap()
     );
 }
+
+#[test]
+fn test_reference_count() {
+    let account_address = AccountAddress::ZERO;
+    let global_value = GlobalValue::cached(Value::struct_(Struct::pack(vec![Value::address(
+        account_address,
+    )])))
+    .unwrap();
+    assert_eq!(global_value.reference_count(), 1);
+    {
+        let _reference = global_value.borrow_global().unwrap();
+        assert_eq!(global_value.reference_count(), 2);
+    }
+    assert_eq!(global_value.reference_count(), 1);
+}
