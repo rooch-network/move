@@ -14,7 +14,7 @@ use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
     gas_algebra::AbstractMemorySize,
-    u256,
+    u256::{self, U256},
     value::{MoveStructLayout, MoveTypeLayout},
     vm_status::{sub_status::NFE_VECTOR_ERROR_BASE, StatusCode},
 };
@@ -1299,12 +1299,62 @@ impl VMValueCast<Vec<u8>> for Value {
     }
 }
 
+impl VMValueCast<Vec<u16>> for Value {
+    fn cast(self) -> PartialVMResult<Vec<u16>> {
+        match self.0 {
+            ValueImpl::Container(Container::VecU16(r)) => take_unique_ownership(r),
+            v => Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                .with_message(format!("cannot cast {:?} to vector<u16>", v,))),
+        }
+    }
+}
+
+impl VMValueCast<Vec<u32>> for Value {
+    fn cast(self) -> PartialVMResult<Vec<u32>> {
+        match self.0 {
+            ValueImpl::Container(Container::VecU32(r)) => take_unique_ownership(r),
+            v => Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                .with_message(format!("cannot cast {:?} to vector<u32>", v,))),
+        }
+    }
+}
+
 impl VMValueCast<Vec<u64>> for Value {
     fn cast(self) -> PartialVMResult<Vec<u64>> {
         match self.0 {
             ValueImpl::Container(Container::VecU64(r)) => take_unique_ownership(r),
             v => Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
                 .with_message(format!("cannot cast {:?} to vector<u64>", v,))),
+        }
+    }
+}
+
+impl VMValueCast<Vec<u128>> for Value {
+    fn cast(self) -> PartialVMResult<Vec<u128>> {
+        match self.0 {
+            ValueImpl::Container(Container::VecU128(r)) => take_unique_ownership(r),
+            v => Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                .with_message(format!("cannot cast {:?} to vector<u128>", v,))),
+        }
+    }
+}
+
+impl VMValueCast<Vec<U256>> for Value {
+    fn cast(self) -> PartialVMResult<Vec<U256>> {
+        match self.0 {
+            ValueImpl::Container(Container::VecU256(r)) => take_unique_ownership(r),
+            v => Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                .with_message(format!("cannot cast {:?} to vector<U256>", v,))),
+        }
+    }
+}
+
+impl VMValueCast<Vec<AccountAddress>> for Value {
+    fn cast(self) -> PartialVMResult<Vec<AccountAddress>> {
+        match self.0 {
+            ValueImpl::Container(Container::VecAddress(r)) => take_unique_ownership(r),
+            v => Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                .with_message(format!("cannot cast {:?} to vector<u128>", v,))),
         }
     }
 }
