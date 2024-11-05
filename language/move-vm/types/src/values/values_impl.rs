@@ -3352,6 +3352,73 @@ impl Value {
     }
 }
 
+impl Value {
+    pub fn size(&self) -> usize {
+        self.0.size()
+    }
+}
+
+impl ValueImpl {
+    pub fn size(&self) -> usize {
+        match self {
+            ValueImpl::Invalid => 0,
+            ValueImpl::U8(_) => 1,
+            ValueImpl::U16(_) => 2,
+            ValueImpl::U32(_) => 4,
+            ValueImpl::U64(_) => 8,
+            ValueImpl::U128(_) => 16,
+            ValueImpl::U256(_) => 32,
+            ValueImpl::Bool(_) => 1,
+            ValueImpl::Address(_) => 32,
+            ValueImpl::Container(v) => v.size(),
+            ValueImpl::ContainerRef(v) => v.size(),
+            ValueImpl::IndexedRef(v) => v.size(),
+        }
+    }
+}
+
+impl Container {
+    pub fn size(&self) -> usize {
+        match self {
+            Container::Vec(v) => {
+                let r = v.borrow();
+                match r.first() {
+                    None => 0,
+                    Some(v) => r.len() * v.size(),
+                }
+            },
+            Container::Struct(v) => v.borrow().iter().map(|s| s.size()).sum(),
+            Container::Locals(v) => v.borrow().iter().map(|s| s.size()).sum(),
+            Container::VecU8(r) => r.borrow().len() * 1,
+            Container::VecU16(r) => r.borrow().len() * 2,
+            Container::VecU32(r) => r.borrow().len() * 4,
+            Container::VecU64(r) => r.borrow().len() * 8,
+            Container::VecU128(r) => r.borrow().len() * 16,
+            Container::VecU256(r) => r.borrow().len() * 32,
+            Container::VecBool(r) => r.borrow().len() * 1,
+            Container::VecAddress(r) => r.borrow().len() * 32,
+        }
+    }
+}
+
+impl ContainerRef {
+    pub fn size(&self) -> usize {
+        match self {
+            ContainerRef::Local(c) => c.size(),
+            ContainerRef::Global {
+                status: _,
+                container: c,
+            } => c.size(),
+        }
+    }
+}
+
+impl IndexedRef {
+    pub fn size(&self) -> usize {
+        self.container_ref.size()
+    }
+}
+
 /***************************************************************************************
 *
 * Destructors

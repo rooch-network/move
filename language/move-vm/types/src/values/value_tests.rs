@@ -241,3 +241,50 @@ fn test_reference_count() {
     }
     assert_eq!(global_value.reference_count(), 1);
 }
+
+#[test]
+fn test_value_size() {
+    let values_size = vec![
+        (Value::u8(1), 1),
+        (Value::u16(1), 2),
+        (Value::u32(1), 4),
+        (Value::u64(1), 8),
+        (Value::u128(1), 16),
+        (Value::u256(U256::from(1_u8)), 32),
+        (Value::bool(true), 1),
+        (Value::address(AccountAddress::random()), 32),
+        (Value::vector_u8(vec![0, 1, 2]), 3),
+        (Value::vector_u16(vec![0, 1, 2]), 6),
+        (Value::vector_u32(vec![0, 1, 2]), 12),
+        (Value::vector_u64(vec![0, 1, 2]), 24),
+        (Value::vector_u128(vec![0, 1, 2]), 48),
+        (
+            Value::vector_u256(vec![U256::from(1_u8), U256::from(1_u8), U256::from(1_u8)]),
+            96,
+        ),
+        (
+            Value::vector_address(vec![
+                AccountAddress::random(),
+                AccountAddress::random(),
+                AccountAddress::random(),
+            ]),
+            96,
+        ),
+        (Value::vector_bool(vec![true, false]), 2),
+        (Value::signer(AccountAddress::random()), 32),
+        (Value::signer_reference(AccountAddress::random()), 32),
+        (
+            Value::struct_(Struct::pack(vec![
+                Value::vector_u8(vec![0, 1, 2]),
+                Value::u8(2),
+                Value::address(AccountAddress::random()),
+                Value::struct_(Struct::pack(vec![Value::vector_u64(vec![0, 1, 2])])),
+            ])),
+            60,
+        ),
+    ];
+
+    for (value, expected_value_size) in values_size.iter() {
+        assert_eq!(value.size(), *expected_value_size as usize);
+    }
+}
