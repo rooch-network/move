@@ -4006,7 +4006,11 @@ impl<'d, 'c, C: CustomDeserializer> serde::de::DeserializeSeed<'d>
 
             // Vectors.
             L::Vector(layout) => Ok(match layout.as_ref() {
-                L::U8 => Value::vector_u8(Vec::deserialize(deserializer)?),
+                L::U8 => {
+                    //Value::vector_u8(Vec::deserialize(deserializer)?)
+                    let v = deserializer.deserialize_byte_buf(BytesVisitor {})?;
+                    Value::vector_u8(v)
+                },
                 L::U16 => Value::vector_u16(Vec::deserialize(deserializer)?),
                 L::U32 => Value::vector_u32(Vec::deserialize(deserializer)?),
                 L::U64 => Value::vector_u64(Vec::deserialize(deserializer)?),
@@ -4047,6 +4051,23 @@ impl<'d, 'c, C: CustomDeserializer> serde::de::DeserializeSeed<'d>
                 }
             },
         }
+    }
+}
+
+struct BytesVisitor;
+
+impl<'d> serde::de::Visitor<'d> for BytesVisitor {
+    type Value = Vec<u8>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("Bytes")
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        Ok(v.to_vec())
     }
 }
 
