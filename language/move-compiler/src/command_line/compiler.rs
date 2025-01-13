@@ -246,7 +246,8 @@ impl<'a> Compiler<'a> {
             interface_files_dir_opt: _interface_files_dir_opt,
             pre_compiled_lib,
             compiled_module_named_address_mapping: _compiled_module_named_address_mapping,
-            flags, known_attributes
+            flags,
+            known_attributes,
         } = self;
         let mut compilation_env = CompilationEnv::new(flags, known_attributes);
         let (source_text, pprog_and_comments_res) = parse_source_program(

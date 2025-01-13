@@ -4863,6 +4863,12 @@ impl ValueImpl {
 }
 
 impl Value {
+    pub fn copy_value(&self) -> PartialVMResult<Self> {
+        Ok(Self(self.0.copy_value()?))
+    }
+}
+
+impl Value {
     // TODO: Consider removing this API, or at least it should return a Result!
     pub fn as_move_value(&self, layout: &MoveTypeLayout) -> MoveValue {
         self.0.as_move_value(layout)

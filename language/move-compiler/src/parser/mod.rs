@@ -256,7 +256,8 @@ pub(crate) fn parse_source_program(
     } in deps
     {
         let source_buffer = deps_source.get(idx).unwrap();
-        let (defs, _, ds, _) = parse_source(compilation_env, path, &mut files, source_buffer.as_str())?;
+        let (defs, _, ds, _) =
+            parse_source(compilation_env, path, &mut files, source_buffer.as_str())?;
         lib_definitions.extend(defs.into_iter().map(|def| PackageDefinition {
             package,
             named_address_map,
@@ -315,7 +316,7 @@ fn parse_source(
             diags.extend(ds);
             files.insert(file_hash, (fname, source_buffer));
             return Ok((vec![], MatchedFileCommentMap::new(), diags, file_hash));
-        }
+        },
         Ok(()) => &source_buffer,
     };
 
@@ -324,7 +325,7 @@ fn parse_source(
         Err(ds) => {
             diags.extend(ds);
             (vec![], MatchedFileCommentMap::new())
-        }
+        },
     };
     files.insert(file_hash, (fname, source_buffer));
     Ok((defs, comments, diags, file_hash))

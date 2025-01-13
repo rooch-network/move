@@ -26,13 +26,13 @@ use crate::{
 use move_binary_format::file_format as F;
 use move_bytecode_source_map::source_map::SourceMap;
 use move_core_types::account_address::AccountAddress as MoveAddress;
+use move_ir_types::ast::Metadata;
 use move_ir_types::{ast as IR, location::*};
 use move_symbol_pool::Symbol;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     convert::TryInto,
 };
-use move_ir_types::ast::Metadata;
 
 type CollectedInfos = UniqueMap<FunctionName, CollectedInfo>;
 type CollectedInfo = BTreeMap<SpecId, SpecAnchor>;

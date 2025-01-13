@@ -520,7 +520,7 @@ impl VMRuntime {
         Ok(())
     }
 
-    pub(crate) fn loader(&self) -> &Loader {
+    pub fn loader(&self) -> &Loader {
         &self.loader
     }
 

@@ -44,11 +44,11 @@ use std::{
 };
 use typed_arena::Arena;
 
-mod access_specifier_loader;
-mod function;
-mod modules;
-mod script;
-mod type_loader;
+pub mod access_specifier_loader;
+pub mod function;
+pub mod modules;
+pub mod script;
+pub mod type_loader;
 
 use crate::data_cache::TransactionCache;
 use crate::{
@@ -2259,7 +2259,7 @@ impl Loader {
         })
     }
 
-    pub(crate) fn type_to_type_tag(
+    pub fn type_to_type_tag(
         &self,
         ty: &Type,
         module_storage: &dyn ModuleStorage,
@@ -2283,7 +2283,7 @@ impl Loader {
         self.type_to_type_layout_impl(ty, module_store, module_storage, &mut count, 1)
     }
 
-    pub(crate) fn type_to_type_layout(
+    pub fn type_to_type_layout(
         &self,
         ty: &Type,
         module_store: &LegacyModuleStorageAdapter,
@@ -2308,7 +2308,7 @@ impl Loader {
 
 // Public APIs for external uses.
 impl Loader {
-    pub(crate) fn get_type_layout(
+    pub fn get_type_layout(
         &self,
         type_tag: &TypeTag,
         move_storage: &mut (impl TransactionCache + ?Sized),

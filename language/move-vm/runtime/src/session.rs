@@ -31,10 +31,10 @@ use move_vm_types::{
 use std::{borrow::Borrow, sync::Arc};
 
 pub struct Session<'r, 'l, C> {
-    pub(crate) move_vm: &'l MoveVM,
-    pub(crate) data_cache: C,
-    pub(crate) module_store: LegacyModuleStorageAdapter,
-    pub(crate) native_extensions: NativeContextExtensions<'r>,
+    pub move_vm: &'l MoveVM,
+    pub data_cache: C,
+    pub module_store: LegacyModuleStorageAdapter,
+    pub native_extensions: NativeContextExtensions<'r>,
 }
 
 /// Serialized return values from function/script execution

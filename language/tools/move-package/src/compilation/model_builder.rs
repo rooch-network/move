@@ -154,7 +154,7 @@ impl ModelBuilder {
     }
 }
 
-fn make_options_for_v2_compiler(targets: Vec<PackagePaths>, deps: Vec<PackagePaths>) -> Options {
+pub fn make_options_for_v2_compiler(targets: Vec<PackagePaths>, deps: Vec<PackagePaths>) -> Options {
     let mut options = Options {
         sources: targets
             .iter()

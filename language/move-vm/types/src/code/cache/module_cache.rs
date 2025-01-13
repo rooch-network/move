@@ -207,7 +207,8 @@ macro_rules! version_too_small_error {
 }
 
 /// Non-[Sync] version of module cache suitable for sequential execution.
-pub struct UnsyncModuleCache<K, DC, VC, E, V> {
+#[derive(Clone)]
+pub struct UnsyncModuleCache<K, DC, VC, E, V: Default + Ord> {
     module_cache: RefCell<HashMap<K, VersionedModuleCode<DC, VC, E, V>>>,
 }
 

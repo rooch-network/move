@@ -193,7 +193,7 @@ impl LoaderV2 {
 
     /// Returns a struct type corresponding to the specified name. The module
     /// containing the struct is loaded.
-    pub(crate) fn load_struct_ty(
+    pub fn load_struct_ty(
         &self,
         module_storage: &dyn ModuleStorage,
         address: &AccountAddress,

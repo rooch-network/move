@@ -18,10 +18,11 @@ use move_binary_format::{
 use move_core_types::{language_storage::ModuleId, metadata::Metadata, vm_status::StatusCode};
 use move_vm_types::resolver::MoveResolver;
 use std::{ops::Deref, sync::Arc};
+use crate::data_cache::TransactionCache;
 
 #[derive(Clone)]
 pub struct MoveVM {
-    pub(crate) runtime: VMRuntime,
+    pub runtime: VMRuntime,
 }
 
 impl MoveVM {
@@ -71,6 +72,19 @@ impl MoveVM {
                     .clone(),
                 remote,
             ),
+            module_store: LegacyModuleStorageAdapter::new(self.runtime.module_storage_v1()),
+            native_extensions,
+        }
+    }
+
+    pub fn new_session_with_extensions_legacy<'r, D: TransactionCache>(
+        &self,
+        data_cache: D,
+        native_extensions: NativeContextExtensions<'r>,
+    ) -> Session<'r, '_, D> {
+        Session {
+            move_vm: self,
+            data_cache,
             module_store: LegacyModuleStorageAdapter::new(self.runtime.module_storage_v1()),
             native_extensions,
         }

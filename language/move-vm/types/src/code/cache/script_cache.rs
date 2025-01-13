@@ -41,6 +41,7 @@ pub trait ScriptCache {
 }
 
 /// Non-[Sync] implementation of script cache suitable for single-threaded execution.
+#[derive(Clone)]
 pub struct UnsyncScriptCache<K, D, V> {
     script_cache: RefCell<HashMap<K, Code<D, V>>>,
 }

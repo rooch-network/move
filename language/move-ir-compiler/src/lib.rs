@@ -53,7 +53,10 @@ impl<'a> Compiler<'a> {
         Ok(self.compile_mod(code)?.0)
     }
 
-    pub fn into_compiled_module_with_metadata(self, code: &str) -> Result<(CompiledModule, Metadata)> {
+    pub fn into_compiled_module_with_metadata(
+        self,
+        code: &str,
+    ) -> Result<(CompiledModule, Metadata)> {
         let (compiled_module, _, metadata) = self.compile_mod_with_metadata(code)?;
         Ok((compiled_module, metadata))
     }
@@ -81,7 +84,10 @@ impl<'a> Compiler<'a> {
         Ok((compiled_module, source_map))
     }
 
-    fn compile_mod_with_metadata(self, code: &str) -> Result<(CompiledModule, SourceMap, Metadata)> {
+    fn compile_mod_with_metadata(
+        self,
+        code: &str,
+    ) -> Result<(CompiledModule, SourceMap, Metadata)> {
         let parsed_module = parse_module(code)?;
         let (compiled_module, source_map) =
             compile_module(parsed_module.clone(), self.deps.iter().copied())?;

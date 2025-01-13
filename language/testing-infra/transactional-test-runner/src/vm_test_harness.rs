@@ -57,6 +57,7 @@ use std::{
     path::Path,
     rc::Rc,
 };
+use move_vm_runtime::data_cache::{TransactionCache, TransactionDataCache};
 
 const STD_ADDR: AccountAddress = AccountAddress::ONE;
 
@@ -519,7 +520,7 @@ impl<'a> SimpleVMTestAdapter<'a> {
         &mut self,
         gas_budget: Option<u64>,
         module_storage: &impl ModuleStorage,
-        f: impl FnOnce(&mut Session, &mut GasStatus) -> VMResult<Ret>,
+        f: impl FnOnce(&mut Session<TransactionDataCache>, &mut GasStatus) -> VMResult<Ret>,
     ) -> VMResult<Ret> {
         let (vm, _) = self.vm_and_runtime_environment();
         let (mut session, mut gas_status) = {

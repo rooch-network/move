@@ -367,7 +367,7 @@ impl<'input> Lexer<'input> {
             '*' => (Tok::Star, 1),
             '+' => (Tok::Plus, 1),
             ',' => (Tok::Comma, 1),
-            '-' =>  {
+            '-' => {
                 if text.starts_with("->") {
                     (Tok::Arrow, 2)
                 } else {
@@ -385,7 +385,7 @@ impl<'input> Lexer<'input> {
             ':' => {
                 if text.starts_with(":=") {
                     (Tok::ColonEqual, 2) // spec update
-                }  else if text.starts_with("::") {
+                } else if text.starts_with("::") {
                     (Tok::ColonColon, 2)
                 } else {
                     (Tok::Colon, 1)

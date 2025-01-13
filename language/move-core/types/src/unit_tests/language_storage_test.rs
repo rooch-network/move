@@ -2,6 +2,7 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::identifier::IdentStr;
 use crate::{
     account_address::AccountAddress,
     ident_str,
@@ -10,7 +11,6 @@ use crate::{
 };
 use bcs::test_helpers::assert_canonical_encode_decode;
 use proptest::prelude::*;
-use crate::identifier::IdentStr;
 
 proptest! {
     #[test]
