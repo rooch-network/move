@@ -442,13 +442,13 @@ impl<'r, 'l, C: TransactionCache> Session<'r, 'l, C> {
     }
 
     pub fn get_type_layout(
-        &mut self,
+        &self,
         type_tag: &TypeTag,
         module_storage: &impl ModuleStorage,
     ) -> VMResult<MoveTypeLayout> {
         self.move_vm.runtime.loader().get_type_layout(
             type_tag,
-            &mut self.data_cache,
+            &self.data_cache,
             &self.module_store,
             module_storage,
         )

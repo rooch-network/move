@@ -30,10 +30,7 @@ use move_vm_types::{
     values::{GlobalValue, Value},
 };
 use sha3::{Digest, Sha3_256};
-use std::{
-    collections::btree_map::{self, BTreeMap},
-    sync::Arc,
-};
+use std::{collections::btree_map::BTreeMap, sync::Arc};
 
 pub struct AccountDataCache {
     // The bool flag in the `data_map` indicates whether the resource contains
@@ -85,10 +82,6 @@ pub struct TransactionDataCache<'r> {
     account_map: BTreeMap<AccountAddress, AccountDataCache>,
 
     deserializer_config: DeserializerConfig,
-
-    // Caches to help avoid duplicate deserialization calls.
-    compiled_scripts: BTreeMap<[u8; 32], Arc<CompiledScript>>,
-    compiled_modules: BTreeMap<ModuleId, (Arc<CompiledModule>, usize, [u8; 32])>,
 }
 
 impl<'r> TransactionDataCache<'r> {
@@ -102,8 +95,6 @@ impl<'r> TransactionDataCache<'r> {
             remote,
             account_map: BTreeMap::new(),
             deserializer_config,
-            compiled_scripts: BTreeMap::new(),
-            compiled_modules: BTreeMap::new(),
         }
     }
 }
@@ -284,72 +275,53 @@ impl<'r> TransactionCache for TransactionDataCache<'r> {
     }
 
     fn load_compiled_script_to_cache(
-        &mut self,
+        &self,
         script_blob: &[u8],
-        hash_value: [u8; 32],
+        _hash_value: [u8; 32],
     ) -> VMResult<Arc<CompiledScript>> {
-        let cache = &mut self.compiled_scripts;
-        match cache.entry(hash_value) {
-            btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
-            btree_map::Entry::Vacant(entry) => {
-                let script = match CompiledScript::deserialize_with_config(
-                    script_blob,
-                    &self.deserializer_config,
-                ) {
-                    Ok(script) => script,
-                    Err(err) => {
-                        let msg = format!("[VM] deserializer for script returned error: {:?}", err);
-                        return Err(PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
-                            .with_message(msg)
-                            .finish(Location::Script));
-                    },
-                };
-                Ok(entry.insert(Arc::new(script)).clone())
-            },
-        }
+        let script =
+            match CompiledScript::deserialize_with_config(script_blob, &self.deserializer_config) {
+                Ok(script) => script,
+                Err(err) => {
+                    let msg = format!("[VM] deserializer for script returned error: {:?}", err);
+                    return Err(PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
+                        .with_message(msg)
+                        .finish(Location::Script));
+                },
+            };
+
+        Ok(Arc::new(script))
     }
 
     fn load_compiled_module_to_cache(
-        &mut self,
+        &self,
         id: ModuleId,
         allow_loading_failure: bool,
     ) -> VMResult<(Arc<CompiledModule>, usize, [u8; 32])> {
-        let cache = &mut self.compiled_modules;
-        match cache.entry(id) {
-            btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
-            btree_map::Entry::Vacant(entry) => {
-                // bytes fetching, allow loading to fail if the flag is set
-                let bytes = match load_module_impl(self.remote, &self.account_map, entry.key())
-                    .map_err(|err| err.finish(Location::Undefined))
-                {
-                    Ok(bytes) => bytes,
-                    Err(err) if allow_loading_failure => return Err(err),
-                    Err(err) => {
-                        return Err(expect_no_verification_errors(err));
-                    },
-                };
-
-                let mut sha3_256 = Sha3_256::new();
-                sha3_256.update(&bytes);
-                let hash_value: [u8; 32] = sha3_256.finalize().into();
-
-                // for bytes obtained from the data store, they should always deserialize and verify.
-                // It is an invariant violation if they don't.
-                let module =
-                    CompiledModule::deserialize_with_config(&bytes, &self.deserializer_config)
-                        .map_err(|err| {
-                            let msg = format!("Deserialization error: {:?}", err);
-                            PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
-                                .with_message(msg)
-                                .finish(Location::Module(entry.key().clone()))
-                        })
-                        .map_err(expect_no_verification_errors)?;
-
-                Ok(entry
-                    .insert((Arc::new(module), bytes.len(), hash_value))
-                    .clone())
+        let bytes = match load_module_impl(self.remote, &self.account_map, &id)
+            .map_err(|err| err.finish(Location::Undefined))
+        {
+            Ok(bytes) => bytes,
+            Err(err) if allow_loading_failure => return Err(err),
+            Err(err) => {
+                return Err(expect_no_verification_errors(err));
             },
-        }
+        };
+
+        let module = CompiledModule::deserialize_with_config(&bytes, &self.deserializer_config)
+            .map_err(|err| {
+                let msg = format!("Deserialization error: {:?}", err);
+                PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
+                    .with_message(msg)
+                    .finish(Location::Module(id.clone()))
+            })
+            .map_err(expect_no_verification_errors)?;
+
+        let mut sha3_256 = Sha3_256::new();
+        sha3_256.update(&bytes);
+        let hash_value: [u8; 32] = sha3_256.finalize().into();
+
+        Ok((Arc::new(module), bytes.len(), hash_value))
     }
 
     fn num_mutated_resources(&self, sender: &AccountAddress) -> u64 {
@@ -403,8 +375,6 @@ impl<'r> TransactionCache for TransactionDataCache<'r> {
 
         Ok(change_set)
     }
-
-
 }
 
 impl<'r> TransactionDataCache<'r> {
@@ -437,7 +407,9 @@ pub trait TransactionCache {
         resource_converter: &dyn Fn(Value, MoveTypeLayout, bool) -> PartialVMResult<Resource>,
         loader: &Loader,
         module_storage: &dyn ModuleStorage,
-    ) -> PartialVMResult<Changes<Bytes, Resource>> where Self: Sized;
+    ) -> PartialVMResult<Changes<Bytes, Resource>>
+    where
+        Self: Sized;
 
     fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64;
     fn num_mutated_resources(&self, sender: &AccountAddress) -> u64;
@@ -458,12 +430,12 @@ pub trait TransactionCache {
     ) -> VMResult<()>;
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool>;
     fn load_compiled_script_to_cache(
-        &mut self,
+        &self,
         script_blob: &[u8],
         hash_value: [u8; 32],
     ) -> VMResult<Arc<CompiledScript>>;
     fn load_compiled_module_to_cache(
-        &mut self,
+        &self,
         id: ModuleId,
         allow_loading_failure: bool,
     ) -> VMResult<(Arc<CompiledModule>, usize, [u8; 32])>;

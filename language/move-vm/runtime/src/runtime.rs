@@ -34,9 +34,9 @@ use move_vm_types::{
 use std::{borrow::Borrow, collections::BTreeSet, sync::Arc};
 
 /// An instantiation of the MoveVM.
-pub(crate) struct VMRuntime {
+pub struct VMRuntime {
     loader: Loader,
-    pub(crate) module_cache: Arc<LegacyModuleCache>,
+    pub module_cache: Arc<LegacyModuleCache>,
 }
 
 impl Clone for VMRuntime {

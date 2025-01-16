@@ -51,7 +51,7 @@ pub trait LegacyModuleStorage {
     fn fetch_module_by_ref(&self, addr: &AccountAddress, name: &IdentStr) -> Option<Arc<Module>>;
 }
 
-pub(crate) struct LegacyModuleCache(RwLock<BinaryCache<ModuleId, Arc<Module>>>);
+pub struct LegacyModuleCache(RwLock<BinaryCache<ModuleId, Arc<Module>>>);
 
 impl LegacyModuleCache {
     pub fn new() -> Self {
@@ -94,7 +94,7 @@ pub struct LegacyModuleStorageAdapter {
 }
 
 impl LegacyModuleStorageAdapter {
-    pub(crate) fn new(modules: Arc<dyn LegacyModuleStorage>) -> Self {
+    pub fn new(modules: Arc<dyn LegacyModuleStorage>) -> Self {
         Self { modules }
     }
 

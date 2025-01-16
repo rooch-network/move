@@ -43,19 +43,19 @@ pub struct Function {
 }
 
 /// For loaded function representation, specifies the owner: a script or a module.
-pub(crate) enum LoadedFunctionOwner {
+pub enum LoadedFunctionOwner {
     Script(Arc<Script>),
     Module(Arc<Module>),
 }
 
 /// A loaded runtime function representation along with type arguments used to instantiate it.
 pub struct LoadedFunction {
-    pub(crate) owner: LoadedFunctionOwner,
+    pub owner: LoadedFunctionOwner,
     // A set of verified type arguments provided for this definition. If
     // function is not generic, an empty vector.
-    pub(crate) ty_args: Vec<Type>,
+    pub ty_args: Vec<Type>,
     // Definition of the loaded function.
-    pub(crate) function: Arc<Function>,
+    pub function: Arc<Function>,
 }
 
 impl LoadedFunction {
@@ -294,14 +294,14 @@ impl Function {
 
 // A function instantiation.
 #[derive(Clone, Debug)]
-pub(crate) struct FunctionInstantiation {
+pub struct FunctionInstantiation {
     // index to `ModuleCache::functions` global table
-    pub(crate) handle: FunctionHandle,
-    pub(crate) instantiation: Vec<Type>,
+    pub handle: FunctionHandle,
+    pub instantiation: Vec<Type>,
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum FunctionHandle {
+pub enum FunctionHandle {
     Local(Arc<Function>),
     Remote { module: ModuleId, name: Identifier },
 }

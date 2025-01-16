@@ -23,18 +23,18 @@ use std::{collections::BTreeMap, ops::Deref, sync::Arc};
 #[derive(Clone, Debug)]
 pub struct Script {
     // primitive pools
-    pub(crate) script: Arc<CompiledScript>,
+    pub script: Arc<CompiledScript>,
 
     // functions as indexes into the Loader function list
-    pub(crate) function_refs: Vec<FunctionHandle>,
+    pub function_refs: Vec<FunctionHandle>,
     // materialized instantiations, whether partial or not
-    pub(crate) function_instantiations: Vec<FunctionInstantiation>,
+    pub function_instantiations: Vec<FunctionInstantiation>,
 
     // entry point
-    pub(crate) main: Arc<Function>,
+    pub main: Arc<Function>,
 
     // a map of single-token signature indices to type
-    pub(crate) single_signature_token_map: BTreeMap<SignatureIndex, Type>,
+    pub single_signature_token_map: BTreeMap<SignatureIndex, Type>,
 }
 
 impl Script {
