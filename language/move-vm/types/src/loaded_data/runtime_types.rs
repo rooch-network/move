@@ -23,6 +23,7 @@ use move_core_types::{
 use serde::Serialize;
 use smallbitvec::SmallBitVec;
 use smallvec::{smallvec, SmallVec};
+use std::ops::Deref;
 use std::{
     cell::RefCell,
     cmp::max,
@@ -32,6 +33,8 @@ use std::{
     sync::Arc,
 };
 use triomphe::Arc as TriompheArc;
+
+pub const TYPE_DEPTH_MAX: usize = 256;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Debug)]
 /// A formula describing the value depth of a type, using (the depths of) the type parameters as inputs.
@@ -621,11 +624,11 @@ impl Type {
                 "Unexpected TyParam type after translating from TypeTag to Type".to_string(),
             )),
 
-            Type::Vector(ty) => {
-                AbilitySet::polymorphic_abilities(AbilitySet::VECTOR, vec![false], vec![
-                    ty.abilities()?
-                ])
-            },
+            Type::Vector(ty) => AbilitySet::polymorphic_abilities(
+                AbilitySet::VECTOR,
+                vec![false],
+                vec![ty.abilities()?],
+            ),
             Type::Struct { ability, .. } => Ok(ability.base_ability_set),
             Type::StructInstantiation {
                 ty_args,
@@ -718,6 +721,76 @@ impl Type {
 
             Ok(n)
         })
+    }
+
+    fn clone_impl(&self, depth: usize) -> PartialVMResult<Type> {
+        self.apply_subst(|idx, _| Ok(Type::TyParam(idx)), depth)
+    }
+
+    fn apply_subst<F>(&self, subst: F, depth: usize) -> PartialVMResult<Type>
+    where
+        F: Fn(u16, usize) -> PartialVMResult<Type> + Copy,
+    {
+        if depth > TYPE_DEPTH_MAX {
+            return Err(PartialVMError::new(StatusCode::VM_MAX_TYPE_DEPTH_REACHED));
+        }
+        let res = match self {
+            Type::TyParam(idx) => subst(*idx, depth)?,
+            Type::Bool => Type::Bool,
+            Type::U8 => Type::U8,
+            Type::U16 => Type::U16,
+            Type::U32 => Type::U32,
+            Type::U64 => Type::U64,
+            Type::U128 => Type::U128,
+            Type::U256 => Type::U256,
+            Type::Address => Type::Address,
+            Type::Signer => Type::Signer,
+            Type::Vector(ty) => Type::Vector(TriompheArc::new(ty.apply_subst(subst, depth + 1)?)),
+            Type::Reference(ty) => Type::Reference(Box::new(ty.apply_subst(subst, depth + 1)?)),
+            Type::MutableReference(ty) => {
+                Type::MutableReference(Box::new(ty.apply_subst(subst, depth + 1)?))
+            },
+            Type::Struct {
+                idx: def_idx,
+                ability,
+            } => Type::Struct {
+                idx: *def_idx,
+                ability: ability.clone(),
+            },
+            Type::StructInstantiation {
+                idx: def_idx,
+                ty_args,
+                ability,
+            } => {
+                let mut inst = vec![];
+                for ty in ty_args.deref() {
+                    inst.push(ty.apply_subst(subst, depth + 1)?)
+                }
+                Type::StructInstantiation {
+                    idx: *def_idx,
+                    ty_args: TriompheArc::new(inst),
+                    ability: ability.clone(),
+                }
+            },
+        };
+        Ok(res)
+    }
+
+    pub fn subst(&self, ty_args: &[Type]) -> PartialVMResult<Type> {
+        self.apply_subst(
+            |idx, depth| match ty_args.get(idx as usize) {
+                Some(ty) => ty.clone_impl(depth),
+                None => Err(
+                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                        .with_message(format!(
+                            "type substitution failed: index out of bounds -- len {} got {}",
+                            ty_args.len(),
+                            idx
+                        )),
+                ),
+            },
+            1,
+        )
     }
 }
 

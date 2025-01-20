@@ -29,6 +29,7 @@ use move_vm_types::{
     values::{GlobalValue, Value},
 };
 use std::{borrow::Borrow, sync::Arc};
+use crate::runtime::VMRuntime;
 
 pub struct Session<'r, 'l, C> {
     pub move_vm: &'l MoveVM,
@@ -583,5 +584,13 @@ impl<'r, 'l, C: TransactionCache> Session<'r, 'l, C> {
                 script.borrow(),
                 code_storage,
             )
+    }
+
+    pub fn get_data_store(&mut self) -> &mut dyn TransactionCache {
+        &mut self.data_cache
+    }
+
+    pub fn runtime(&self) -> &VMRuntime {
+        &self.move_vm.runtime
     }
 }
