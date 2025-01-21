@@ -3584,6 +3584,7 @@ dependencies = [
  "difference",
  "move-binary-format",
  "move-bytecode-source-map",
+ "move-bytecode-utils",
  "move-bytecode-verifier",
  "move-command-line-common",
  "move-compiler",

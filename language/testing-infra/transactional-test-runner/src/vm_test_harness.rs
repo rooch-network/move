@@ -8,6 +8,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use clap::Parser;
+use move_binary_format::errors::PartialVMResult;
 use move_binary_format::{
     access::ModuleAccess, compatibility::Compatibility, errors::VMResult,
     file_format::CompiledScript, file_format_common, CompiledModule,
@@ -37,6 +38,7 @@ use move_model::metadata::LanguageVersion;
 use move_resource_viewer::MoveValueAnnotator;
 use move_stdlib::move_stdlib_named_addresses;
 use move_symbol_pool::Symbol;
+use move_vm_runtime::data_cache::{TransactionCache, TransactionDataCache};
 use move_vm_runtime::{
     config::VMConfig,
     module_traversal::*,
@@ -49,7 +51,7 @@ use move_vm_test_utils::{
     gas_schedule::{CostTable, Gas, GasStatus},
     InMemoryStorage,
 };
-use move_vm_types::resolver::ResourceResolver;
+use move_vm_types::resolver::{MoveResolver, ResourceResolver};
 use once_cell::sync::Lazy;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -57,7 +59,7 @@ use std::{
     path::Path,
     rc::Rc,
 };
-use move_vm_runtime::data_cache::{TransactionCache, TransactionDataCache};
+use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 
 const STD_ADDR: AccountAddress = AccountAddress::ONE;
 
@@ -503,6 +505,33 @@ impl<'a> MoveTestAdapter<'a> for SimpleVMTestAdapter<'a> {
     }
 }
 
+pub fn view_resource_in_move_storage(
+    storage: &impl MoveResolver,
+    module_viewer: impl CompiledModuleView,
+    address: AccountAddress,
+    module: &ModuleId,
+    resource: &IdentStr,
+    type_args: Vec<TypeTag>,
+) -> Result<String> {
+    let tag = StructTag {
+        address: *module.address(),
+        module: module.name().to_owned(),
+        name: resource.to_owned(),
+        type_args,
+    };
+    let (bytes_opt, _) = storage
+        .get_resource_bytes_with_metadata_and_layout(&address, &tag, &[], None)
+        .unwrap();
+    // TODO
+    match bytes_opt {
+        None => Ok("[No Resource Exists]".to_owned()),
+        Some(bytes) => {
+            let annotated = MoveValueAnnotator::new(module_viewer).view_resource(&tag, &bytes)?;
+            Ok(format!("{}", annotated))
+        },
+    }
+}
+
 impl<'a> SimpleVMTestAdapter<'a> {
     fn vm_and_runtime_environment(&self) -> (Rc<MoveVM>, RuntimeEnvironmentAdapter) {
         let vm = match &self.vm_and_runtime_environment.0 {
@@ -680,10 +709,13 @@ pub fn run_test_with_config(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (suffix, config) =
         if get_move_compiler_v2_from_env() && !matches!(config, TestRunConfig::CompilerV2 { .. }) {
-            (Some(EXP_EXT_V2.to_owned()), TestRunConfig::CompilerV2 {
-                language_version: LanguageVersion::default(),
-                v2_experiments: vec![],
-            })
+            (
+                Some(EXP_EXT_V2.to_owned()),
+                TestRunConfig::CompilerV2 {
+                    language_version: LanguageVersion::default(),
+                    v2_experiments: vec![],
+                },
+            )
         } else {
             (Some(EXP_EXT.to_owned()), config)
         };
