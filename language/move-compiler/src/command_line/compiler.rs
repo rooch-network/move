@@ -168,6 +168,12 @@ impl<'a> Compiler<'a> {
         self
     }
 
+    pub fn set_flags(mut self, flags: Flags) -> Self {
+        assert!(self.flags.is_empty());
+        self.flags = flags;
+        self
+    }
+
     pub fn set_interface_files_dir_opt(mut self, dir_opt: Option<String>) -> Self {
         assert!(self.interface_files_dir_opt.is_none());
         self.interface_files_dir_opt = dir_opt;
@@ -480,6 +486,84 @@ pub fn construct_pre_compiled_lib<
     )
     .set_interface_files_dir_opt(interface_files_dir_opt)
     .run::<PASS_PARSER>()?;
+
+    let (_comments, stepped) = match pprog_and_comments_res {
+        Err(errors) => return Ok(Err((files, errors))),
+        Ok(res) => res,
+    };
+
+    let (empty_compiler, ast) = stepped.into_ast();
+    let mut compilation_env = empty_compiler.compilation_env;
+    let start = PassResult::Parser(ast);
+    let mut parser = None;
+    let mut expansion = None;
+    let mut naming = None;
+    let mut typing = None;
+    let mut inlining = None;
+    let mut hlir = None;
+    let mut cfgir = None;
+    let mut compiled = None;
+
+    let save_result = |cur: &PassResult, _env: &CompilationEnv| match cur {
+        PassResult::Parser(prog) => {
+            assert!(parser.is_none());
+            parser = Some(prog.clone())
+        },
+        PassResult::Expansion(eprog) => {
+            assert!(expansion.is_none());
+            expansion = Some(eprog.clone())
+        },
+        PassResult::Naming(nprog) => {
+            assert!(naming.is_none());
+            naming = Some(nprog.clone())
+        },
+        PassResult::Typing(tprog) => {
+            assert!(typing.is_none());
+            typing = Some(tprog.clone())
+        },
+        PassResult::Inlining(tprog) => {
+            assert!(inlining.is_none());
+            inlining = Some(tprog.clone())
+        },
+        PassResult::HLIR(hprog) => {
+            assert!(hlir.is_none());
+            hlir = Some(hprog.clone());
+        },
+        PassResult::CFGIR(cprog) => {
+            assert!(cfgir.is_none());
+            cfgir = Some(cprog.clone());
+        },
+        PassResult::Compilation(units, _final_diags) => {
+            assert!(compiled.is_none());
+            compiled = Some(units.clone())
+        },
+    };
+    match run(
+        &mut compilation_env,
+        None,
+        start,
+        PASS_COMPILATION,
+        save_result,
+    ) {
+        Err(errors) => Ok(Err((files, errors))),
+        Ok(_) => Ok(Ok(FullyCompiledProgram {
+            files,
+            parser: parser.unwrap(),
+            expansion: expansion.unwrap(),
+            naming: naming.unwrap(),
+            typing: typing.unwrap(),
+            inlining: inlining.unwrap(),
+            hlir: hlir.unwrap(),
+            cfgir: cfgir.unwrap(),
+            compiled: compiled.unwrap(),
+        })),
+    }
+}
+
+pub fn construct_pre_compiled_lib_from_compiler(
+    compiler: Compiler,
+) -> anyhow::Result<Result<FullyCompiledProgram, (FilesSourceText, Diagnostics)>> {
+    let (files, pprog_and_comments_res) = compiler.run::<PASS_PARSER>()?;
 
     let (_comments, stepped) = match pprog_and_comments_res {
         Err(errors) => return Ok(Err((files, errors))),
