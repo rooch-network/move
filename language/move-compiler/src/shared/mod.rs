@@ -55,7 +55,13 @@ pub fn parse_named_address(s: &str) -> anyhow::Result<(String, NumericalAddress)
         );
     }
     let name = before_after[0].parse()?;
-    let addr = NumericalAddress::parse_str(before_after[1])
+
+    let mut old_addr = before_after[1];
+    if old_addr.starts_with("0x0x") {
+        old_addr = old_addr.strip_prefix("0x").unwrap();
+    }
+
+    let addr = NumericalAddress::parse_str(old_addr)
         .map_err(|err| anyhow::format_err!("{}", err))?;
     Ok((name, addr))
 }
@@ -814,6 +820,8 @@ pub mod known_attributes {
             NativeAttribute::add_attribute_names(table);
             DeprecationAttribute::add_attribute_names(table);
             LintAttribute::add_attribute_names(table);
+            table.insert("data_struct".to_string());
+            table.insert("private_generics".to_string());
         }
 
         fn name(&self) -> &str {
