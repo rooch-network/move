@@ -222,7 +222,7 @@ impl LoaderV2 {
     /// the struct definition is also loaded.
     pub(crate) fn load_ty(
         &self,
-        module_storage: &impl ModuleStorage,
+        module_storage: &dyn ModuleStorage,
         ty_tag: &TypeTag,
     ) -> PartialVMResult<Type> {
         // TODO(loader_v2): Loader V1 uses VMResults everywhere, but partial VM errors

@@ -327,7 +327,7 @@ impl Loader {
         ty_tag: &TypeTag,
         data_store: &(impl TransactionCache + ?Sized),
         module_store: &LegacyModuleStorageAdapter,
-        module_storage: &impl ModuleStorage,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<Type> {
         match self {
             Self::V1(loader) => loader.load_type(ty_tag, data_store, module_store),
@@ -2313,7 +2313,7 @@ impl Loader {
         type_tag: &TypeTag,
         move_storage: &(impl TransactionCache + ?Sized),
         module_storage_adapter: &LegacyModuleStorageAdapter,
-        module_storage: &impl ModuleStorage,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<MoveTypeLayout> {
         let ty = self.load_type(
             type_tag,
@@ -2328,9 +2328,9 @@ impl Loader {
     pub(crate) fn get_fully_annotated_type_layout(
         &self,
         type_tag: &TypeTag,
-        move_storage: &mut (impl TransactionCache + ?Sized),
+        move_storage: &(impl TransactionCache + ?Sized),
         module_storage_adapter: &LegacyModuleStorageAdapter,
-        module_storage: &impl ModuleStorage,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<MoveTypeLayout> {
         let ty = self.load_type(
             type_tag,
