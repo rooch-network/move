@@ -10,10 +10,11 @@ mod helpers;
 pub mod signer;
 pub mod string;
 pub mod type_name;
-pub mod vector;
 #[cfg(feature = "testing")]
 pub mod unit_test;
+pub mod vector;
 
+use crate::natives::vector::PushBackGasParameters;
 use move_core_types::account_address::AccountAddress;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 
@@ -24,6 +25,7 @@ pub struct GasParameters {
     pub signer: signer::GasParameters,
     pub string: string::GasParameters,
     pub type_name: type_name::GasParameters,
+    pub vector: PushBackGasParameters,
 
     #[cfg(feature = "testing")]
     pub unit_test: unit_test::GasParameters,
@@ -77,6 +79,10 @@ impl GasParameters {
                     per_byte_searched: 0.into(),
                 },
             },
+            vector: PushBackGasParameters {
+                base: 0.into(),
+                legacy_per_abstract_memory_unit: 0.into(),
+            },
             #[cfg(feature = "testing")]
             unit_test: unit_test::GasParameters {
                 create_signers_for_testing: unit_test::CreateSignersForTestingGasParameters {
@@ -107,6 +113,7 @@ pub fn all_natives(
     add_natives!("signer", signer::make_all(gas_params.signer));
     add_natives!("string", string::make_all(gas_params.string));
     add_natives!("type_name", type_name::make_all(gas_params.type_name));
+    add_natives!("vector", vector::make_all(gas_params.vector));
     #[cfg(feature = "testing")]
     {
         add_natives!("unit_test", unit_test::make_all(gas_params.unit_test));

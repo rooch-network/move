@@ -54,3 +54,11 @@ pub fn make_native_append(gas_params: PushBackGasParameters) -> NativeFunction {
         },
     )
 }
+
+pub fn make_all(
+    gas_params: PushBackGasParameters,
+) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [("native_append", make_native_append(gas_params))];
+
+    crate::natives::helpers::make_module_natives(natives)
+}

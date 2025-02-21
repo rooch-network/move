@@ -139,9 +139,9 @@ pub trait ModuleCache {
 }
 
 /// Same as [ModuleCode], additionally storing a version.
-struct VersionedModuleCode<DC, VC, E, V> {
-    module_code: Arc<ModuleCode<DC, VC, E>>,
-    version: V,
+pub struct VersionedModuleCode<DC, VC, E, V> {
+    pub module_code: Arc<ModuleCode<DC, VC, E>>,
+    pub version: V,
 }
 
 impl<DC, VC, E, V> VersionedModuleCode<DC, VC, E, V>
@@ -209,8 +209,10 @@ macro_rules! version_too_small_error {
 /// Non-[Sync] version of module cache suitable for sequential execution.
 #[derive(Clone)]
 pub struct UnsyncModuleCache<K, DC, VC, E, V: Default + Ord> {
-    module_cache: RefCell<HashMap<K, VersionedModuleCode<DC, VC, E, V>>>,
+    pub module_cache: RefCell<HashMap<K, VersionedModuleCode<DC, VC, E, V>>>,
 }
+
+use std::cell::Ref;
 
 impl<K, DC, VC, E, V> UnsyncModuleCache<K, DC, VC, E, V>
 where
@@ -231,6 +233,11 @@ where
             .into_inner()
             .into_iter()
             .map(|(k, m)| (k, m.into_module_code()))
+    }
+
+    pub fn borrow(&self) -> Ref<HashMap<K, VersionedModuleCode<DC, VC, E, V>>> {
+        //self.module_cache.borrow().iter().map(|(k, m)| (k, m))
+        self.module_cache.borrow()
     }
 }
 

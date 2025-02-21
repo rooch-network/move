@@ -52,12 +52,12 @@ impl StructInstantiationInfo {
 /// Cached information for any struct type. Caches information about its instantiations as well if
 /// the struct is generic.
 #[derive(Clone)]
-struct StructInfo {
+pub struct StructInfo {
     /// Depth formula of a possibly generic struct, together with a thread id that cached it. If
     /// the formula is not yet cached, [None] is stored.
-    depth_formula: Option<(DepthFormula, std::thread::ThreadId)>,
+    pub depth_formula: Option<(DepthFormula, std::thread::ThreadId)>,
     /// Cached information for different struct instantiations.
-    instantiation_info: hashbrown::HashMap<Vec<Type>, StructInstantiationInfo>,
+    pub instantiation_info: hashbrown::HashMap<Vec<Type>, StructInstantiationInfo>,
 }
 
 impl StructInfo {
@@ -72,7 +72,7 @@ impl StructInfo {
 
 /// A thread-safe struct information cache that can be used by the VM to store information about
 /// structs, such as their depth formulae, tags, layouts.
-pub(crate) struct StructInfoCache(RwLock<hashbrown::HashMap<StructNameIndex, StructInfo>>);
+pub struct StructInfoCache(pub RwLock<hashbrown::HashMap<StructNameIndex, StructInfo>>);
 
 impl StructInfoCache {
     /// Returns an empty struct information cache.
