@@ -822,6 +822,8 @@ pub mod known_attributes {
             LintAttribute::add_attribute_names(table);
             table.insert("data_struct".to_string());
             table.insert("private_generics".to_string());
+            table.insert("defines_primitive".to_string());
+            table.insert("allow".to_string());
         }
 
         fn name(&self) -> &str {
