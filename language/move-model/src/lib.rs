@@ -414,7 +414,7 @@ pub fn run_model_builder_with_options_and_compilation_flags<
     }
 }
 
-fn run_move_checker(env: &mut GlobalEnv, program: E::Program) {
+pub fn run_move_checker(env: &mut GlobalEnv, program: E::Program) {
     let mut builder = ModelBuilder::new(env);
     for (module_count, (module_id, module_def)) in program
         .modules
@@ -961,7 +961,7 @@ pub fn run_spec_checker(env: &mut GlobalEnv, units: Vec<AnnotatedCompiledUnit>, 
     builder.warn_unused_schemas();
 }
 
-fn retrospective_lambda_lifting(
+pub fn retrospective_lambda_lifting(
     inlined_module: &T::ModuleDefinition,
     expansion_module: &mut E::ModuleDefinition,
 ) {
