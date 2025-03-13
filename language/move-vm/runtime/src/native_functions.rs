@@ -244,9 +244,12 @@ impl<'a, 'b, 'c> NativeContext<'a, 'b, 'c> {
     //}
 
     pub fn load_type(&mut self, type_tag: &TypeTag) -> VMResult<Type> {
-        self.resolver
-            .loader()
-            .load_type_v1(type_tag, self.data_store, self.resolver.module_store())
+        self.resolver.loader().load_type(
+            type_tag,
+            self.data_store,
+            self.resolver.module_store(),
+            self.resolver.module_storage(),
+        )
     }
 
     pub fn get_type_layout_by_loader(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
