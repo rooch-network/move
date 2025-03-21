@@ -15,6 +15,13 @@ use std::sync::Arc;
 pub struct PushBackGasParameters {
     pub base: InternalGas,
     pub legacy_per_abstract_memory_unit: InternalGasPerAbstractMemoryUnit,
+    pub empty: InternalGas,
+    pub length: InternalGas,
+    pub push_back: InternalGas,
+    pub borrow: InternalGas,
+    pub pop_back: InternalGas,
+    pub destroy_empty: InternalGas,
+    pub swap: InternalGas,
 }
 
 pub fn native_append(

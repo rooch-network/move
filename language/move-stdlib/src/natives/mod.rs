@@ -81,6 +81,13 @@ impl GasParameters {
             },
             vector: PushBackGasParameters {
                 base: 0.into(),
+                empty: 0.into(),
+                length: 0.into(),
+                push_back: 0.into(),
+                borrow: 0.into(),
+                pop_back: 0.into(),
+                destroy_empty: 0.into(),
+                swap: 0.into(),
                 legacy_per_abstract_memory_unit: 0.into(),
             },
             #[cfg(feature = "testing")]
