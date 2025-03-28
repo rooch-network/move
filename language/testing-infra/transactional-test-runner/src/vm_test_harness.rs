@@ -303,6 +303,7 @@ impl<'a> MoveTestAdapter<'a> for SimpleVMTestAdapter<'a> {
             Compatibility::no_check()
         } else {
             Compatibility::new(
+                true,
                 !extra_args.skip_check_struct_layout,
                 !extra_args.skip_check_friend_linking,
                 false,
