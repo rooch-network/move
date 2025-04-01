@@ -1184,7 +1184,7 @@ enum BinaryType {
 // A Resolver is a simple and small structure allocated on the stack and used by the
 // interpreter. It's the only API known to the interpreter and it's tailored to the interpreter
 // needs.
-pub(crate) struct Resolver<'a> {
+pub struct Resolver<'a> {
     loader: &'a Loader,
     module_store: &'a LegacyModuleStorageAdapter,
     binary: BinaryType,
@@ -1656,7 +1656,7 @@ impl<'a> Resolver<'a> {
         self.module_store
     }
 
-    pub(crate) fn module_storage(&self) -> &dyn ModuleStorage {
+    pub fn module_storage(&self) -> &dyn ModuleStorage {
         self.module_storage
     }
 

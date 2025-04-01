@@ -285,4 +285,8 @@ impl<'a, 'b, 'c> NativeContext<'a, 'b, 'c> {
             _ => Err(PartialVMError::new(StatusCode::ABORTED)),
         }
     }
+
+    pub fn resolver(&self) -> &Resolver {
+        self.resolver
+    }
 }
