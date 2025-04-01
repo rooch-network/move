@@ -24,7 +24,7 @@ use crate::env_pipeline::rewrite_target::{
     RewriteState, RewriteTarget, RewriteTargets, RewritingScope,
 };
 use itertools::Itertools;
-use log::info;
+use log::{debug, info};
 use move_model::{
     ast::{ConditionKind, Exp, ExpData, GlobalInvariant, Operation, SpecFunDecl},
     exp_rewriter::ExpRewriterFunctions,
@@ -39,7 +39,7 @@ use std::{
 };
 
 pub fn run_spec_rewriter(env: &mut GlobalEnv) {
-    info!("rewriting specifications");
+    debug!("rewriting specifications");
 
     // Collect all spec blocks and spec functions in the whole program, plus
     // functions in compilation scope. For the later we need to process

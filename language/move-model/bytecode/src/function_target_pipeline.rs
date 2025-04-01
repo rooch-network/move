@@ -424,7 +424,7 @@ impl FunctionTargetPipeline {
         AfterEach: Fn(usize, &dyn FunctionTargetProcessor, &FunctionTargetsHolder) -> bool,
     {
         let rev_topo_order = Self::sort_in_reverse_topological_order(env, targets);
-        info!("transforming bytecode");
+        debug!("transforming bytecode");
         hook_before_pipeline(targets);
         for (step_count, processor) in self.processors.iter().enumerate() {
             if processor.is_single_run() {
