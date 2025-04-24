@@ -11,17 +11,48 @@ use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
+
+#[derive(Debug, Clone)]
+pub struct EmptyGasParameters {
+    pub base: InternalGas,
+}
+#[derive(Debug, Clone)]
+pub struct LengthGasParameters {
+    pub base: InternalGas,
+}
+#[derive(Debug, Clone)]
+pub struct BorrowGasParameters {
+    pub base: InternalGas,
+}
+#[derive(Debug, Clone)]
+pub struct PopBackGasParameters {
+    pub base: InternalGas,
+}
+
+#[derive(Debug, Clone)]
+pub struct SwapGasParameters {
+    pub base: InternalGas,
+}
+#[derive(Debug, Clone)]
+pub struct DestroyEmptyGasParameters {
+    pub base: InternalGas,
+}
+
+#[derive(Debug, Clone)]
+pub struct GasParameters {
+    pub empty: EmptyGasParameters,
+    pub length: LengthGasParameters,
+    pub push_back: PushBackGasParameters,
+    pub borrow: BorrowGasParameters,
+    pub pop_back: PopBackGasParameters,
+    pub destroy_empty: DestroyEmptyGasParameters,
+    pub swap: SwapGasParameters,
+}
+
 #[derive(Debug, Clone)]
 pub struct PushBackGasParameters {
     pub base: InternalGas,
     pub legacy_per_abstract_memory_unit: InternalGasPerAbstractMemoryUnit,
-    pub empty: InternalGas,
-    pub length: InternalGas,
-    pub push_back: InternalGas,
-    pub borrow: InternalGas,
-    pub pop_back: InternalGas,
-    pub destroy_empty: InternalGas,
-    pub swap: InternalGas,
 }
 
 pub fn native_append(
@@ -63,9 +94,9 @@ pub fn make_native_append(gas_params: PushBackGasParameters) -> NativeFunction {
 }
 
 pub fn make_all(
-    gas_params: PushBackGasParameters,
+    gas_params: GasParameters,
 ) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [("native_append", make_native_append(gas_params))];
+    let natives = [("native_append", make_native_append(gas_params.push_back))];
 
     crate::natives::helpers::make_module_natives(natives)
 }

@@ -25,7 +25,7 @@ pub struct GasParameters {
     pub signer: signer::GasParameters,
     pub string: string::GasParameters,
     pub type_name: type_name::GasParameters,
-    pub vector: PushBackGasParameters,
+    pub vector: vector::GasParameters,
 
     #[cfg(feature = "testing")]
     pub unit_test: unit_test::GasParameters,
@@ -79,16 +79,17 @@ impl GasParameters {
                     per_byte_searched: 0.into(),
                 },
             },
-            vector: PushBackGasParameters {
-                base: 0.into(),
-                empty: 0.into(),
-                length: 0.into(),
-                push_back: 0.into(),
-                borrow: 0.into(),
-                pop_back: 0.into(),
-                destroy_empty: 0.into(),
-                swap: 0.into(),
-                legacy_per_abstract_memory_unit: 0.into(),
+            vector: vector::GasParameters {
+                empty: vector::EmptyGasParameters { base: 0.into() },
+                length: vector::LengthGasParameters { base: 0.into() },
+                push_back: vector::PushBackGasParameters {
+                    base: 0.into(),
+                    legacy_per_abstract_memory_unit: 0.into(),
+                },
+                borrow: vector::BorrowGasParameters { base: 0.into() },
+                pop_back: vector::PopBackGasParameters { base: 0.into() },
+                destroy_empty: vector::DestroyEmptyGasParameters { base: 0.into() },
+                swap: vector::SwapGasParameters { base: 0.into() },
             },
             #[cfg(feature = "testing")]
             unit_test: unit_test::GasParameters {
